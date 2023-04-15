@@ -10,3 +10,6 @@ proc-macro = true
 syn = "2"
 quote = "1.0.23"
 proc-macro2 = "1.0.51"
+
+[dev-dependencies]
+trybuild = "1"
