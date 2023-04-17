@@ -1,0 +1,23 @@
+error: proc-macro derive panicked
+ --> tests/trybuild/invalid-attribute.rs:3:10
+  |
+3 | #[derive(Get)]
+  |          ^^^
+  |
+  = help: message: called `Result::unwrap()` on an `Err` value: "failed to parse attribute"
+
+error: proc-macro derive panicked
+ --> tests/trybuild/invalid-attribute.rs:9:10
+  |
+9 | #[derive(Get)]
+  |          ^^^
+  |
+  = help: message: called `Result::unwrap()` on an `Err` value: "failed to parse attribute"
+
+error: proc-macro derive panicked
+  --> tests/trybuild/invalid-attribute.rs:15:10
+   |
+15 | #[derive(Get)]
+   |          ^^^
+   |
+   = help: message: called `Result::unwrap()` on an `Err` value: "invalid name value list in attribute"

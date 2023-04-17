@@ -45,4 +45,5 @@ fn trybuild() {
     let tests = trybuild::TestCases::new();
     tests.compile_fail(testcase!("unit-struct.rs"));
     tests.compile_fail(testcase!("tuple-struct-without-attribute.rs"));
+    tests.compile_fail(testcase!("invalid-attribute.rs"));
 }
