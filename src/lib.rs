@@ -143,12 +143,14 @@ mod get {
                             .iter()
                             .map(|n| n.try_into())
                             .collect::<Result<Vec<GetNameValue>, _>>()?;
-                        return Ok(get_name_values.into_iter().fold(
-                            Self::default(),
-                            |_, g| match g {
-                                GetNameValue::Method(name) => Self { method: Some(name) },
-                            },
-                        ));
+                        if let 1..=3 = get_name_values.len() {
+                            return Ok(get_name_values.into_iter().fold(
+                                Self::default(),
+                                |_, g| match g {
+                                    GetNameValue::Method(name) => Self { method: Some(name) },
+                                },
+                            ));
+                        }
                     }
                 }
             }
