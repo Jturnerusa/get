@@ -39,3 +39,9 @@ fn cat_tuple_struct() {
     assert_eq!(*cat.age(), 1);
     assert!(matches!(cat.owner(), ()));
 }
+
+#[test]
+fn trybuild() {
+    let tests = trybuild::TestCases::new();
+    tests.compile_fail(testcase!("unit-struct.rs"));
+}

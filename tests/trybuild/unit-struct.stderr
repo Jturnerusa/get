@@ -1,0 +1,7 @@
+error: proc-macro derive panicked
+ --> tests/trybuild/unit-struct.rs:3:10
+  |
+3 | #[derive(Get)]
+  |          ^^^
+  |
+  = help: message: called `Result::unwrap()` on an `Err` value: "can not generate getters on a unit struct"
