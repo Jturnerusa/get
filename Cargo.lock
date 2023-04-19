@@ -15,6 +15,7 @@ dependencies = [
 name = "get"
 version = "0.0.0"
 dependencies = [
+ "if_chain",
  "proc-macro2",
  "quote",
  "syn",
@@ -26,6 +27,12 @@ name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
+
+[[package]]
+name = "if_chain"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "itoa"
