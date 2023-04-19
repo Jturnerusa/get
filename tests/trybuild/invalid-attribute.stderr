@@ -4,7 +4,7 @@ error: proc-macro derive panicked
 3 | #[derive(Get)]
   |          ^^^
   |
-  = help: message: called `Result::unwrap()` on an `Err` value: "failed to parse attribute"
+  = help: message: called `Result::unwrap()` on an `Err` value: "expected at least 1 name value pair in attribute"
 
 error: proc-macro derive panicked
  --> tests/trybuild/invalid-attribute.rs:9:10

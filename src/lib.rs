@@ -8,6 +8,7 @@ pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 mod get {
 
+    use if_chain::if_chain;
     use proc_macro2::{Span, TokenStream};
     use quote::{format_ident, quote, ToTokens};
     use syn::{
@@ -133,47 +134,46 @@ mod get {
     impl TryFrom<Attribute> for GetAttribute {
         type Error = Box<dyn std::error::Error>;
         fn try_from(attr: Attribute) -> Result<Self, Self::Error> {
-            if attr.path().is_ident("get") {
-                if let Meta::List(meta_list) = &attr.meta {
-                    if let Ok(meta_name_values) =
-                        Punctuated::<MetaNameValue, Token![,]>::parse_terminated
-                            .parse(meta_list.tokens.clone().into())
-                    {
-                        let get_name_values = meta_name_values
-                            .iter()
-                            .map(|n| n.try_into())
-                            .collect::<Result<Vec<GetNameValue>, _>>()?;
-                        if let 1..=3 = get_name_values.len() {
-                            return Ok(get_name_values.into_iter().fold(
-                                Self::default(),
-                                |_, g| match g {
-                                    GetNameValue::Method(name) => Self { method: Some(name) },
-                                },
-                            ));
-                        }
-                    }
+            if_chain! {
+                if attr.path().is_ident("get");
+                if let Meta::List(list) = &attr.meta;
+                then {
+                    Ok(Punctuated::<MetaNameValue, Token![,]>::parse_terminated
+                        .parse(list.tokens.clone().into())?
+                        .into_iter()
+                        .map(|n| n.try_into())
+                        .collect::<Result<Vec<GetNameValue>, _>>()
+                        .map(|v| match v.len() {
+                            1..=3 => Ok(v),
+                            _ => Err("expected at least 1 name value pair in attribute")
+                        })??
+                        .into_iter()
+                        .fold(Self::default(), |_, n| match n {
+                            GetNameValue::Method(s) => Self {
+                                method: Some(s),
+                            },
+                        }))
+                } else {
+                    Err("failed to parse attribute".into())
                 }
             }
-            Err("failed to parse attribute".into())
         }
     }
 
-    // The same applies here.
-
-    impl<'a> TryFrom<&'a MetaNameValue> for GetNameValue {
+    impl TryFrom<MetaNameValue> for GetNameValue {
         type Error = Box<dyn std::error::Error>;
-        fn try_from(meta: &'a MetaNameValue) -> Result<Self, Self::Error> {
-            if let Some(name) = meta.path.get_ident().map(|i| i.to_string()) {
-                if let Expr::Lit(expr_lit) = &meta.value {
-                    if let Lit::Str(s) = &expr_lit.lit {
-                        let value = s.value();
-                        if let "method" = name.as_str() {
-                            return Ok(Self::Method(value));
-                        };
-                    }
+        fn try_from(meta: MetaNameValue) -> Result<Self, Self::Error> {
+            if_chain! {
+                if let Some(name) = meta.path.get_ident().map(|ident| ident.to_string());
+                if let Expr::Lit(expr) = &meta.value;
+                if let Lit::Str(s) = &expr.lit;
+                if let "method" = name.as_str();
+                then {
+                    Ok(Self::Method(s.value()))
+                } else {
+                    Err("invalid name value list in attribute".into())
                 }
             }
-            Err("invalid name value list in attribute".into())
         }
     }
 }
