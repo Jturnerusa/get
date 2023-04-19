@@ -171,7 +171,7 @@ mod get {
                 then {
                     Ok(Self::Method(s.value()))
                 } else {
-                    Err("invalid name value list in attribute".into())
+                    Err("invalid name value pair in attribute".into())
                 }
             }
         }

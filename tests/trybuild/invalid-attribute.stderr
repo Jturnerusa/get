@@ -20,4 +20,4 @@ error: proc-macro derive panicked
 15 | #[derive(Get)]
    |          ^^^
    |
-   = help: message: called `Result::unwrap()` on an `Err` value: "invalid name value list in attribute"
+   = help: message: called `Result::unwrap()` on an `Err` value: "invalid name value pair in attribute"
