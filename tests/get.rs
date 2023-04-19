@@ -7,14 +7,14 @@ macro_rules! testcase {
 }
 
 #[derive(Get)]
-pub struct CatStruct<'a, T> {
+pub struct Cat<'a, T> {
     name: &'a str,
     age: u64,
     owner: T,
 }
 
 #[derive(Get)]
-pub struct CatTupleStruct<'a, T>(
+pub struct CatTuple<'a, T>(
     #[get(method = "name")] &'a str,
     #[get(method = "age")] u64,
     #[get(method = "owner")] T,
@@ -22,7 +22,7 @@ pub struct CatTupleStruct<'a, T>(
 
 #[test]
 fn cat_struct() {
-    let cat = CatStruct {
+    let cat = Cat {
         name: "cat",
         age: 1,
         owner: (),
@@ -34,7 +34,7 @@ fn cat_struct() {
 
 #[test]
 fn cat_tuple_struct() {
-    let cat = CatTupleStruct("cat", 1, ());
+    let cat = CatTuple("cat", 1, ());
     assert_eq!(*cat.name(), "cat");
     assert_eq!(*cat.age(), 1);
     assert!(matches!(cat.owner(), ()));
