@@ -6,6 +6,12 @@ pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     get::expand(&parsed_input, false).unwrap().into()
 }
 
+#[proc_macro_derive(GetCopy, attributes(get))]
+pub fn get_copy(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let parsed_input = syn::parse_macro_input!(input as syn::DeriveInput);
+    get::expand(&parsed_input, true).unwrap().into()
+}
+
 mod get {
 
     use if_chain::if_chain;
@@ -117,14 +123,27 @@ mod get {
             Type::Reference(type_ref) => Some(&type_ref.lifetime),
             _ => None,
         };
-        let reference = (!is_copy).then(|| quote! { & });
+        let method_args = if is_copy {
+            quote! { ( self ) }
+        } else {
+            quote! {  ( & #field_lifetime self )  }
+        };
+        let method_type = if is_copy {
+            quote! { #field_type }
+        } else {
+            quote! { & #field_type }
+        };
+        let method_body = if is_copy {
+            quote! { { self . #field_name } }
+        } else {
+            quote! { { & self . #field_name } }
+        };
         quote! {
             pub fn
             #method_name
-            ( #reference #field_lifetime self )
-            -> #reference #field_type {
-                #reference self.#field_name
-            }
+            #method_args
+            -> #method_type
+            #method_body
         }
     }
 
