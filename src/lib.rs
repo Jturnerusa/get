@@ -96,8 +96,18 @@ mod get {
                 Some(Ok(get_attr)) if get_attr.method.is_some() => {
                     format_ident!("{}", get_attr.method.unwrap().as_str())
                 }
+                // Currently unreachable because an empty GetAttrubute is an error, and there is only
+                // one field that can be set right now.
+                Some(Ok(_)) => {
+                    return Err(concat!(
+                        r#"expected name value pair on tuple struct field"#,
+                        " ",
+                        r#"(e.g #[get("method" = method_name)])"#
+                    )
+                    .into())
+                }
                 Some(Err(e)) => return Err(e),
-                _ => return Err(r#"tuple fields are required to have an attribute"#.into()),
+                None => return Err(r#"expected attribute on tuple struct field"#.into()),
             };
             let getter = expand_getter(
                 field,

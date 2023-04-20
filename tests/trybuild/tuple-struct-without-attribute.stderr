@@ -4,4 +4,4 @@ error: proc-macro derive panicked
 3 | #[derive(Get)]
   |          ^^^
   |
-  = help: message: called `Result::unwrap()` on an `Err` value: "tuple fields are required to have an attribute"
+  = help: message: called `Result::unwrap()` on an `Err` value: "expected attribute on tuple struct field"
