@@ -73,7 +73,7 @@ mod get {
             };
             let getter = expand_getter(
                 field,
-                Member::Named(field.ident.as_ref().unwrap().clone()),
+                &Member::Named(field.ident.as_ref().unwrap().clone()),
                 &method_name,
                 is_copy,
             );
@@ -101,7 +101,7 @@ mod get {
             };
             let getter = expand_getter(
                 field,
-                Member::Unnamed(Index {
+                &Member::Unnamed(Index {
                     index: i as u32,
                     span: Span::call_site(),
                 }),
@@ -115,7 +115,7 @@ mod get {
 
     fn expand_getter(
         field: &Field,
-        field_name: Member,
+        field_name: &Member,
         method_name: &Ident,
         is_copy: bool,
     ) -> TokenStream {
