@@ -19,7 +19,7 @@ mod get {
     use quote::{format_ident, quote, ToTokens};
     use syn::{
         parse::Parser, punctuated::Punctuated, Attribute, Data, DeriveInput, Expr, Field, Fields,
-        Index, Lit, Member, Meta, MetaNameValue, Token, Type,
+        Ident, Index, Lit, Member, Meta, MetaNameValue, Token, Type,
     };
 
     #[derive(Default)]
@@ -60,20 +60,21 @@ mod get {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for field in fields {
-            let default_method_name = field.ident.as_ref().cloned().unwrap().to_string();
-            let method_name = field
-                .attrs
-                .iter()
-                .find(|attr| attr.path().is_ident("get"))
-                .cloned()
-                .map_or(Ok(default_method_name.clone()), |attr| {
-                    GetAttribute::try_from(attr)
-                        .map(|get_attr| get_attr.method.unwrap_or(default_method_name.clone()))
-                })?;
+            let method_name = match field.attrs.iter().find_map(|attr| {
+                attr.path()
+                    .is_ident("get")
+                    .then(|| GetAttribute::try_from(attr.clone()))
+            }) {
+                Some(Ok(a)) if a.method.is_some() => {
+                    format_ident!("{}", a.method.unwrap().as_str())
+                }
+                Some(Err(e)) => return Err(e),
+                _ => field.ident.as_ref().cloned().unwrap(),
+            };
             let getter = expand_getter(
                 field,
                 Member::Named(field.ident.as_ref().unwrap().clone()),
-                method_name.as_str(),
+                &method_name,
                 is_copy,
             );
             getter.to_tokens(&mut tokens);
@@ -87,23 +88,24 @@ mod get {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for (i, field) in fields.enumerate() {
-            let attr: GetAttribute = field
-                .attrs
-                .iter()
-                .find(|a| a.path().is_ident("get"))
-                .cloned()
-                .ok_or("tuple fields are required to have an attribute")?
-                .try_into()?;
-            let method_name = attr
-                .method
-                .ok_or("tuple field attributes must specify the method name")?;
+            let method_name = match field.attrs.iter().find_map(|attr| {
+                attr.path()
+                    .is_ident("get")
+                    .then(|| GetAttribute::try_from(attr.clone()))
+            }) {
+                Some(Ok(get_attr)) if get_attr.method.is_some() => {
+                    format_ident!("{}", get_attr.method.unwrap().as_str())
+                }
+                Some(Err(e)) => return Err(e),
+                _ => return Err(r#"tuple fields are required to have an attribute"#.into()),
+            };
             let getter = expand_getter(
                 field,
                 Member::Unnamed(Index {
                     index: i as u32,
                     span: Span::call_site(),
                 }),
-                method_name.as_str(),
+                &method_name,
                 is_copy,
             );
             getter.to_tokens(&mut tokens);
@@ -114,10 +116,9 @@ mod get {
     fn expand_getter(
         field: &Field,
         field_name: Member,
-        method_name: &str,
+        method_name: &Ident,
         is_copy: bool,
     ) -> TokenStream {
-        let method_name = format_ident!("{method_name}");
         let field_type = &field.ty;
         let field_lifetime = match &field.ty {
             Type::Reference(type_ref) => Some(&type_ref.lifetime),
