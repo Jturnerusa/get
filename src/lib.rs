@@ -1,5 +1,86 @@
 #![deny(clippy::use_self)]
 
+//! Another getter derive macro.
+//!
+//! # Examples:
+//! #### Regular struct:
+//! ```
+//! use get::Get;
+//!
+//! #[derive(Get)]
+//! struct Crab {
+//!     name: String,
+//!     age: u64,
+//! }
+//!
+//! fn crab() {
+//!     let ferris = Crab::new("ferris", 10);
+//!     assert!(matches!(    
+//!         ferris.name().as_str(),
+//!         "ferris"
+//!     ));
+//!     assert_eq!(*ferris.age(), 10);
+//! }
+//!
+//!# impl Crab {
+//!#     pub fn new(name: &str, age: u64) -> Self {
+//!#         Self { name: name.to_string(), age }
+//!#     }
+//!# }
+//!```
+//! #### Tuple struct:
+//! ```
+//! use get::Get;
+//!
+//! #[derive(Get)]
+//! struct Crab (
+//!     #[get(method = "name")] String,
+//!     #[get(method = "age")] u64,
+//! );
+//!
+//! fn crab() {
+//!     let ferris = Crab::new("ferris", 10);
+//!     assert!(matches!(    
+//!         ferris.name().as_str(),
+//!         "ferris"
+//!     ));
+//!     assert_eq!(*ferris.age(), 10);
+//! }
+//!
+//!# impl Crab {
+//!#     pub fn new(name: &str, age: u64) -> Self {
+//!#         Self ( name.to_string(), age )
+//!#     }
+//!# }
+//!```
+//!#### Getters on Copy types:
+//!```
+//! use get::GetCopy;
+//!
+//! #[derive(Clone, Copy, GetCopy)]
+//! struct NonZeroUInt<T>(
+//!     #[get(method = "inner")] T
+//! );
+//!
+//! fn non_zero_uint() {
+//!     let i = NonZeroUInt::new(1).unwrap();
+//!     // The getter method takes "self" by value.
+//!     assert_eq!(i.inner(), 1);
+//!     // Since NonZeroUint::<u32> is Copy, the value is still accessible.
+//!     assert_eq!(i.inner() + 1, 2);
+//! }
+//!
+//!# impl NonZeroUInt<u32> {
+//!#     fn new(i: u32) -> Option<Self> {
+//!#         (i != 0).then(|| Self(i))
+//!#     }
+//!#  }
+//!```
+//! # Attributes
+//!
+//! The following name value pairs are supported in attributes:
+//! * `#[get(method = "getter")]`
+//!
 #[proc_macro_derive(Get, attributes(get))]
 pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let parsed_input = syn::parse_macro_input!(input as syn::DeriveInput);
