@@ -100,17 +100,27 @@ mod get {
     use quote::{format_ident, quote, ToTokens};
     use syn::{
         parse::Parser, punctuated::Punctuated, Attribute, Data, DeriveInput, Expr, Field, Fields,
-        Ident, Index, Lit, Member, Meta, MetaNameValue, Token, Type,
+        Ident, Index, Lit, Member, MetaNameValue, Token, Type,
     };
 
+    enum GetAttribute {
+        NameValueList(GetNameValueList),
+        IdentList(Vec<GetIdent>),
+    }
+
     #[derive(Default)]
-    struct GetAttribute {
+    struct GetNameValueList {
         method: Option<String>,
     }
 
     #[derive(Debug, Clone)]
     enum GetNameValue {
         Method(String),
+    }
+
+    #[derive(Debug, Clone)]
+    enum GetIdent {
+        Hide,
     }
 
     pub fn expand(
@@ -141,24 +151,37 @@ mod get {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for field in fields {
-            let method_name = match field.attrs.iter().find_map(|attr| {
+            match field.attrs.iter().find_map(|attr| {
                 attr.path()
                     .is_ident("get")
                     .then(|| GetAttribute::try_from(attr.clone()))
             }) {
-                Some(Ok(a)) if a.method.is_some() => {
-                    format_ident!("{}", a.method.unwrap().as_str())
+                Some(Ok(GetAttribute::IdentList(list)))
+                    if list.iter().any(|i| matches!(i, GetIdent::Hide)) =>
+                {
+                    continue
+                }
+                Some(Ok(GetAttribute::NameValueList(list))) => {
+                    let method_name = list
+                        .method
+                        .map(|s| format_ident!("{s}"))
+                        .unwrap_or(field.ident.as_ref().cloned().unwrap());
+                    expand_getter(
+                        field,
+                        &Member::Named(field.ident.as_ref().cloned().unwrap()),
+                        &method_name,
+                        is_copy,
+                    )
                 }
                 Some(Err(e)) => return Err(e),
-                _ => field.ident.as_ref().cloned().unwrap(),
-            };
-            let getter = expand_getter(
-                field,
-                &Member::Named(field.ident.as_ref().unwrap().clone()),
-                &method_name,
-                is_copy,
-            );
-            getter.to_tokens(&mut tokens);
+                _ => expand_getter(
+                    field,
+                    &Member::Named(field.ident.as_ref().cloned().unwrap()),
+                    field.ident.as_ref().unwrap(),
+                    is_copy,
+                ),
+            }
+            .to_tokens(&mut tokens);
         }
         Ok(tokens)
     }
@@ -169,37 +192,31 @@ mod get {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for (i, field) in fields.enumerate() {
-            let method_name = match field.attrs.iter().find_map(|attr| {
+            match field.attrs.iter().find_map(|attr| {
                 attr.path()
                     .is_ident("get")
                     .then(|| GetAttribute::try_from(attr.clone()))
             }) {
-                Some(Ok(get_attr)) if get_attr.method.is_some() => {
-                    format_ident!("{}", get_attr.method.unwrap().as_str())
+                Some(Ok(GetAttribute::IdentList(list)))
+                    if list.iter().any(|i| matches!(i, GetIdent::Hide)) =>
+                {
+                    continue
                 }
-                // Currently unreachable because an empty GetAttrubute is an error, and there is only
-                // one field that can be set right now.
-                Some(Ok(_)) => {
-                    return Err(concat!(
-                        r#"expected name value pair on tuple struct field"#,
-                        " ",
-                        r#"(e.g #[get("method" = method_name)])"#
+                Some(Ok(GetAttribute::NameValueList(list))) if list.method.is_some() => {
+                    expand_getter(
+                        field,
+                        &Member::Unnamed(Index {
+                            index: i.try_into().unwrap(),
+                            span: Span::call_site(),
+                        }),
+                        &list.method.map(|s| format_ident!("{s}")).unwrap(),
+                        is_copy,
                     )
-                    .into())
                 }
                 Some(Err(e)) => return Err(e),
-                None => return Err(r#"expected attribute on tuple struct field"#.into()),
-            };
-            let getter = expand_getter(
-                field,
-                &Member::Unnamed(Index {
-                    index: i as u32,
-                    span: Span::call_site(),
-                }),
-                &method_name,
-                is_copy,
-            );
-            getter.to_tokens(&mut tokens);
+                _ => return Err("expected attribute on tuple struct field".into()),
+            }
+            .to_tokens(&mut tokens)
         }
         Ok(tokens)
     }
@@ -239,34 +256,62 @@ mod get {
         }
     }
 
-    // This method might seem overly complicated but it will make it easy to add new fields to the
-    // GetAttribute struct in the future!
-
     impl TryFrom<Attribute> for GetAttribute {
         type Error = Box<dyn std::error::Error>;
         fn try_from(attr: Attribute) -> Result<Self, Self::Error> {
-            if_chain! {
-                if attr.path().is_ident("get");
-                if let Meta::List(list) = &attr.meta;
-                then {
-                    Ok(Punctuated::<MetaNameValue, Token![,]>::parse_terminated
-                        .parse(list.tokens.clone().into())?
-                        .into_iter()
-                        .map(|n| n.try_into())
-                        .collect::<Result<Vec<GetNameValue>, _>>()
-                        .map(|v| match v.len() {
-                            1..=3 => Ok(v),
-                            _ => Err("expected at least 1 name value pair in attribute")
-                        })??
-                        .into_iter()
-                        .fold(Self::default(), |_, n| match n {
-                            GetNameValue::Method(s) => Self {
-                                method: Some(s),
-                            },
-                        }))
-                } else {
-                    Err("failed to parse attribute".into())
+            let meta_list = attr
+                .meta
+                .require_list()
+                .map_err(|_| "failed to parse attribute")?;
+            let name_value_list = Punctuated::<MetaNameValue, Token![,]>::parse_terminated
+                .parse(meta_list.tokens.clone().into());
+            let ident_list = Punctuated::<Ident, Token![,]>::parse_terminated
+                .parse(meta_list.tokens.clone().into());
+            Ok(match (name_value_list, ident_list) {
+                (Ok(list), _) => Self::NameValueList(GetNameValueList::try_from(list)?),
+                (_, Ok(list)) => {
+                    Self::IdentList(list.into_iter().map(GetIdent::try_from).collect::<Result<
+                        Vec<GetIdent>,
+                        _,
+                    >>(
+                    )?)
                 }
+                _ => return Err("failed to parse attribute".into()),
+            })
+        }
+    }
+
+    #[allow(clippy::needless_update)]
+    impl TryFrom<Punctuated<MetaNameValue, Token![,]>> for GetNameValueList {
+        type Error = Box<dyn std::error::Error>;
+        fn try_from(punct: Punctuated<MetaNameValue, Token![,]>) -> Result<Self, Self::Error> {
+            Ok(punct
+                .into_iter()
+                .map(GetNameValue::try_from)
+                .collect::<Result<Vec<GetNameValue>, _>>()
+                .map(|v| {
+                    if !v.is_empty() {
+                        Ok::<Vec<GetNameValue>, Box<dyn std::error::Error>>(v)
+                    } else {
+                        Err("expected at least 1 name value pair in attribute".into())
+                    }
+                })??
+                .into_iter()
+                .fold(Self::default(), |acc, n| match n {
+                    GetNameValue::Method(m) => Self {
+                        method: Some(m),
+                        ..acc
+                    },
+                }))
+        }
+    }
+
+    impl TryFrom<Ident> for GetIdent {
+        type Error = Box<dyn std::error::Error>;
+        fn try_from(i: Ident) -> Result<Self, Self::Error> {
+            match i.to_string().as_str() {
+                "hide" => Ok(Self::Hide),
+                _ => Err(r#"expected the following ident in meta list: "hide""#.into()),
             }
         }
     }

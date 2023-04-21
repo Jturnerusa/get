@@ -10,6 +10,7 @@ fn trybuild() {
     tests.compile_fail(testcase!("unit-struct.rs"));
     tests.compile_fail(testcase!("tuple-struct-without-attribute.rs"));
     tests.compile_fail(testcase!("invalid-attribute.rs"));
+    tests.compile_fail(testcase!("hidden-field.rs"));
 }
 
 mod get {
