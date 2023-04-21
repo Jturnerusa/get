@@ -11,6 +11,9 @@
 //! struct Crab {
 //!     name: String,
 //!     age: u64,
+//!     // Sometimes we may not need a getter, such as on a public field.
+//!     #[get(hide)]
+//!     pub friend: Option<Box<Crab>>
 //! }
 //!
 //! fn crab() {
@@ -24,7 +27,7 @@
 //!
 //!# impl Crab {
 //!#     pub fn new(name: &str, age: u64) -> Self {
-//!#         Self { name: name.to_string(), age }
+//!#         Self { name: name.to_string(), age, friend: None}
 //!#     }
 //!# }
 //!```
@@ -77,10 +80,18 @@
 //!#  }
 //!```
 //! # Attributes
+//! Attributes are expected to contain a comma separated list of name value pairs or idents.
 //!
-//! The following name value pairs are supported in attributes:
+//! Examples of supported attributes:
 //! * `#[get(method = "getter")]`
+//! * `#[get(hide)]`
 //!
+//! All supported name value pairs:
+//! * `method` (this sets the name of the getter method)
+//!
+//! All supported idents are:
+//! * `hide` (this will disable getters for a specific field)
+
 #[proc_macro_derive(Get, attributes(get))]
 pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let parsed_input = syn::parse_macro_input!(input as syn::DeriveInput);
