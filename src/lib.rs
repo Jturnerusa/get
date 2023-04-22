@@ -11,9 +11,9 @@
 //! struct Crab {
 //!     name: String,
 //!     age: u64,
-//!     // Sometimes we may not need a getter, such as on a public field.
+//!     // Sometimes we may not want to provide access to a field at all.
 //!     #[get(hide)]
-//!     pub friend: Option<Box<Crab>>
+//!     secrets: String
 //! }
 //!
 //! fn crab() {
@@ -27,7 +27,7 @@
 //!
 //!# impl Crab {
 //!#     pub fn new(name: &str, age: u64) -> Self {
-//!#         Self { name: name.to_string(), age, friend: None}
+//!#         Self { name: name.to_string(), age, secrets: "crab secrets".to_string() }
 //!#     }
 //!# }
 //!```
