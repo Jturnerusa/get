@@ -91,6 +91,11 @@
 //!
 //! All supported idents are:
 //! * `hide` (this will disable getters for a specific field)
+//!
+//! # Todos
+//! * detect and return error for fields with conflicting attributes
+//! * improve error output, include span information if possible
+//! * AsRef or Deref getters
 
 #[proc_macro_derive(Get, attributes(get))]
 pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
