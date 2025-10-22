@@ -4,13 +4,13 @@ use get::Get;
 struct Crab {
     #[get(hide)]
     name: String,
-    age: u64
+    age: u64,
 }
 
 fn crab() {
     let ferris = Crab {
         name: "ferris".to_string(),
-        1
+        age: 1,
     };
     assert_eq!(ferris.name().as_str(), "ferris");
 }

@@ -110,13 +110,11 @@ pub fn get_copy(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 mod get {
-
-    use if_chain::if_chain;
     use proc_macro2::{Span, TokenStream};
-    use quote::{format_ident, quote, ToTokens};
+    use quote::{ToTokens, format_ident, quote};
     use syn::{
-        parse::Parser, punctuated::Punctuated, Attribute, Data, DeriveInput, Expr, Field, Fields,
-        Ident, Index, Lit, Member, MetaNameValue, Token, Type,
+        Attribute, Data, DeriveInput, Expr, Field, Fields, Ident, Index, Lit, Member,
+        MetaNameValue, Token, Type, parse::Parser, punctuated::Punctuated,
     };
 
     enum GetAttribute {
@@ -144,7 +142,7 @@ mod get {
         is_copy: bool,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let Data::Struct(target) = &input.data else {
-            return Err("expected struct as derive input".into())
+            return Err("expected struct as derive input".into());
         };
         let getters = match &target.fields {
             Fields::Unnamed(fields) => expand_for_tuple_struct(fields.unnamed.iter(), is_copy)?,
@@ -175,7 +173,7 @@ mod get {
                 Some(Ok(GetAttribute::IdentList(list)))
                     if list.iter().any(|i| matches!(i, GetIdent::Hide)) =>
                 {
-                    continue
+                    continue;
                 }
                 Some(Ok(GetAttribute::NameValueList(list))) => {
                     let method_name = list
@@ -216,7 +214,7 @@ mod get {
                 Some(Ok(GetAttribute::IdentList(list)))
                     if list.iter().any(|i| matches!(i, GetIdent::Hide)) =>
                 {
-                    continue
+                    continue;
                 }
                 Some(Ok(GetAttribute::NameValueList(list))) if list.method.is_some() => {
                     expand_getter(
@@ -335,16 +333,14 @@ mod get {
     impl TryFrom<MetaNameValue> for GetNameValue {
         type Error = Box<dyn std::error::Error>;
         fn try_from(meta: MetaNameValue) -> Result<Self, Self::Error> {
-            if_chain! {
-                if let Some(name) = meta.path.get_ident().map(|ident| ident.to_string());
-                if let Expr::Lit(expr) = &meta.value;
-                if let Lit::Str(s) = &expr.lit;
-                if let "method" = name.as_str();
-                then {
-                    Ok(Self::Method(s.value()))
-                } else {
-                    Err("invalid name value pair in attribute".into())
-                }
+            if let Some(name) = meta.path.get_ident().map(|ident| ident.to_string())
+                && let Expr::Lit(expr) = &meta.value
+                && let Lit::Str(s) = &expr.lit
+                && let "method" = name.as_str()
+            {
+                Ok(Self::Method(s.value()))
+            } else {
+                Err("invalid name value pair in attribute".into())
             }
         }
     }

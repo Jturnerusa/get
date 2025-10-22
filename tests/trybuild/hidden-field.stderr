@@ -1,22 +1,7 @@
-error: expected identifier, found `1`
-  --> tests/trybuild/hidden-field.rs:13:9
-   |
-11 |     let ferris = Crab {
-   |                  ---- while parsing this struct
-12 |         name: "ferris".to_string(),
-13 |         1
-   |         ^ expected identifier
-
-error[E0063]: missing field `age` in initializer of `Crab`
-  --> tests/trybuild/hidden-field.rs:11:18
-   |
-11 |     let ferris = Crab {
-   |                  ^^^^ missing `age`
-
 error[E0599]: no method named `name` found for struct `Crab` in the current scope
   --> tests/trybuild/hidden-field.rs:15:23
    |
-4  | struct Crab {
+ 4 | struct Crab {
    | ----------- method `name` not found for this struct
 ...
 15 |     assert_eq!(ferris.name().as_str(), "ferris");
