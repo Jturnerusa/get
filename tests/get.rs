@@ -16,74 +16,38 @@ fn trybuild() {
 mod get {
     use get::Get;
     #[derive(Get)]
-    pub struct Cat<'a, T> {
-        name: &'a str,
+    pub struct Cat<T> {
+        #[get(kind = "deref")]
+        name: String,
+        #[get(kind = "move")]
         age: u64,
         owner: T,
     }
 
-    #[derive(Get)]
-    pub struct CatTuple<'a, T>(
-        #[get(method = "name")] &'a str,
-        #[get(method = "age")] u64,
+    #[derive(Clone, Get)]
+    pub struct CatTuple<T>(
+        #[get(method = "name", kind = "deref")] String,
+        #[get(method = "age", kind = "move")] u64,
         #[get(method = "owner")] T,
     );
 
     #[test]
     fn cat_struct() {
         let cat = Cat {
-            name: "cat",
-            age: 1,
-            owner: (),
-        };
-        assert_eq!(*cat.name(), "cat");
-        assert_eq!(*cat.age(), 1);
-        assert!(matches!(cat.owner(), ()));
-    }
-
-    #[test]
-    fn cat_tuple_struct() {
-        let cat = CatTuple("cat", 1, ());
-        assert_eq!(*cat.name(), "cat");
-        assert_eq!(*cat.age(), 1);
-        assert!(matches!(cat.owner(), ()));
-    }
-}
-
-mod get_copy {
-    use get::GetCopy;
-
-    #[derive(Clone, Copy, GetCopy)]
-    pub struct Cat<'a, T> {
-        name: &'a str,
-        age: u64,
-        owner: T,
-    }
-
-    #[derive(Clone, Copy, GetCopy)]
-    pub struct CatTuple<'a, T>(
-        #[get(method = "name")] &'a str,
-        #[get(method = "age")] u64,
-        #[get(method = "owner")] T,
-    );
-
-    #[test]
-    fn cat_struct() {
-        let cat = Cat {
-            name: "cat",
+            name: "cat".to_string(),
             age: 1,
             owner: (),
         };
         assert_eq!(cat.name(), "cat");
-        assert_eq!(cat.age(), 1);
         assert!(matches!(cat.owner(), ()));
+        assert_eq!(cat.age(), 1);
     }
 
     #[test]
     fn cat_tuple_struct() {
-        let cat = CatTuple("cat", 1, ());
+        let cat = CatTuple("cat".to_string(), 1, ());
         assert_eq!(cat.name(), "cat");
-        assert_eq!(cat.age(), 1);
         assert!(matches!(cat.owner(), ()));
+        assert_eq!(cat.age(), 1);
     }
 }
