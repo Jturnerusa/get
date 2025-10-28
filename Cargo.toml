@@ -2,6 +2,10 @@
 name = "get"
 version = "0.1.0"
 edition = "2024"
+authors = ["John Turner"]
+license = "GPL-3.0-or-later"
+repository = "https://jturnerusa.dev/cgit/get"
+homepage = "https://jturnerusa.dev/cgit/get"
 
 [lib]
 proc-macro = true
