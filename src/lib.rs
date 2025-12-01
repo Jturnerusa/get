@@ -58,7 +58,7 @@
 //!```
 //!#### Getters on Copy types:
 //!```
-//! use get::GetCopy;
+//! use get::Get;
 //!
 //! #[derive(Clone, Copy, Get)]
 //! struct NonZeroUInt<T>(
@@ -88,16 +88,16 @@
 //!
 //! All supported name value pairs:
 //! * `method` (this sets the name of the getter method)
+//! * `kind` (this sets the kind of getter, the supported getter kinds are listed below)
 //!
 //! All supported idents are:
 //! * `hide` (this will disable getters for a specific field)
 //!
-//! All supported getter kinds are:
+//! All supported getter kinds are (ref is the default):
 //! * `ref`
 //! * `copy`
-//! * `as_ref`
 //! * `deref`
-//!
+//! 
 //! # Todos
 //! * detect and return error for fields with conflicting attributes
 //! * improve error output, include span information if possible
